@@ -74,8 +74,8 @@ class AdminController extends Controller
             ],
             'coordinates_x' => 'required|numeric',
             'coordinates_y' => 'required|numeric',
-            'image_url' => 'nullable|string|max:2048',
-            'pano_url' => 'nullable|string|max:2048',
+            'image_url' => 'nullable|string|max:8192',
+            'pano_url' => 'nullable|string|max:8192',
         ]);
 
         $assignedUserIds = $validated['assigned_user_ids'] ?? [];
@@ -110,8 +110,8 @@ class AdminController extends Controller
             ],
             'coordinates_x' => 'required|numeric',
             'coordinates_y' => 'required|numeric',
-            'image_url' => 'nullable|string|max:2048',
-            'pano_url' => 'nullable|string|max:2048',
+            'image_url' => 'nullable|string|max:8192',
+            'pano_url' => 'nullable|string|max:8192',
         ]);
 
         $assignedUserIds = $validated['assigned_user_ids'] ?? [];
