@@ -57,8 +57,7 @@ class AuthController extends Controller
                 $statusMessage = 'An OTP has been sent to your email.';
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('OTP Email Sending Error: ' . $e->getMessage());
-                \Illuminate\Support\Facades\Log::info("Admin login OTP for {$user->email}: {$otp}");
-                $statusMessage = 'Email delivery could not connect to SMTP (port blocked on cloud host). Your verification code is: ' . $otp;
+                return back()->withErrors(['email' => 'Unable to send verification code. Please verify your mail settings.']);
             }
 
             return redirect()->route('auth.otp')->with('status', $statusMessage);
@@ -140,8 +139,7 @@ class AuthController extends Controller
             $statusMessage = 'A new verification code has been sent!';
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('OTP Resend Error: ' . $e->getMessage());
-            \Illuminate\Support\Facades\Log::info("Admin login resend OTP for {$user->email}: {$otp}");
-            $statusMessage = 'Email delivery could not connect to SMTP (port blocked on cloud host). Your verification code is: ' . $otp;
+            return back()->withErrors(['otp' => 'Unable to send verification code. Please check your mail settings.']);
         }
 
         return back()->with('status', $statusMessage);
