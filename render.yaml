@@ -1,0 +1,51 @@
+databases:
+  - name: laravel-postgres-db
+    databaseName: laravel
+    plan: free
+
+services:
+  - type: web
+    name: laravel-web-app
+    runtime: docker
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: PHP_CATCHALL
+        value: "1"
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: laravel-postgres-db
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: laravel-postgres-db
+          property: connectionString
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: APP_KEY
+        value: base64:Bzl19RPnRqU5BNIvMaJhSVG8Xs8MofxxZXzPbUUPX8I=
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        value: alexanderalfonsoviii@gmail.com
+      - key: MAIL_PASSWORD
+        value: pfeocejuizzlofmj
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_FROM_ADDRESS
+        value: alexanderalfonsoviii@gmail.com
+      - key: MAIL_FROM_NAME
+        value: "MIT Kiosk"
+      - key: PRINTER_ENABLED
+        value: "false"
+      - key: KIOSK_BROWSER_PRINT_FALLBACK
+        value: "true"

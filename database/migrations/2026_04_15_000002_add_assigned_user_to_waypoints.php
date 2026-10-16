@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('waypoints', function (Blueprint $table) {
+            if (!Schema::hasColumn('waypoints', 'assigned_user_id')) {
+                $table->foreignId('assigned_user_id')->nullable()->constrained('users')->nullOnDelete()->after('faculty_id');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('waypoints', function (Blueprint $table) {
+            if (Schema::hasColumn('waypoints', 'assigned_user_id')) {
+                $table->dropConstrainedForeignId('assigned_user_id');
+            }
+        });
+    }
+};
+
