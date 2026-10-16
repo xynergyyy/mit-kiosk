@@ -58,7 +58,7 @@ class AuthController extends Controller
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('OTP Email Sending Error: ' . $e->getMessage());
                 \Illuminate\Support\Facades\Log::info("Admin login OTP for {$user->email}: {$otp}");
-                $statusMessage = 'Email could not be delivered (Check SMTP credentials in .env). Use verification code: ' . $otp;
+                $statusMessage = 'Email delivery could not connect to SMTP (port blocked on cloud host). Your verification code is: ' . $otp;
             }
 
             return redirect()->route('auth.otp')->with('status', $statusMessage);
@@ -141,7 +141,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('OTP Resend Error: ' . $e->getMessage());
             \Illuminate\Support\Facades\Log::info("Admin login resend OTP for {$user->email}: {$otp}");
-            $statusMessage = 'Email could not be delivered (Check SMTP credentials in .env). Use verification code: ' . $otp;
+            $statusMessage = 'Email delivery could not connect to SMTP (port blocked on cloud host). Your verification code is: ' . $otp;
         }
 
         return back()->with('status', $statusMessage);
