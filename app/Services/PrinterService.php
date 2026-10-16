@@ -9,6 +9,18 @@ class PrinterService
      */
     public function printTicket(string $displayNumber, string $meta, string $pcName, string $printerName): array
     {
+        // If running in a hosted / non-Windows container (e.g. Render, Linux Docker),
+        // physical local printer access via UNC/winspool is not available.
+        // Return immediately so there is ZERO delay for the kiosk visitor.
+        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+            return [
+                'ok' => false,
+                'method' => 'cloud_skip',
+                'target' => null,
+                'error' => 'Hosted environment (non-Windows) cannot access local printer directly.',
+            ];
+        }
+
         $text = $this->buildTicketBytes($displayNumber, $meta);
 
         // Build list of UNC shares to try.

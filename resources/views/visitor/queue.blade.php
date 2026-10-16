@@ -102,17 +102,27 @@
 
         const waypoints = (data && Array.isArray(data.waypoints)) ? data.waypoints : [];
 
-        if (!waypoints.length) {
-            host.innerHTML = `
-                <div class="col-span-full bg-white/40 rounded-3xl p-12 text-center border border-dashed border-[#abadaf]/20">
-                    <p class="label-md text-[#595c5e]/40">No active waypoints available</p>
-                </div>
+        // Filter out any waypoint that has no active transaction / tickets
+        const activeWaypoints = waypoints.filter(wpItem => {
+            return Boolean(wpItem && (wpItem.current || (Array.isArray(wpItem.up_next) && wpItem.up_next.length > 0)));
+        });
+
+        // Always update the live clock
+        if (lastUpdated) {
+            lastUpdated.innerHTML = `
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2.5"></span>
+                <span class="font-extrabold text-slate-800 tracking-wide">Live • ${format12HourTime(new Date())}</span>
             `;
+        }
+
+        if (!activeWaypoints.length) {
+            // When transactions are completed or no active tickets exist, leave the window completely empty
+            host.innerHTML = '';
             return;
         }
 
-        // Process 3 Waypoint Columns
-        waypoints.forEach(wpItem => {
+        // Process active Waypoint Columns
+        activeWaypoints.forEach(wpItem => {
             const wp = wpItem.waypoint;
             const staff = wpItem.staff;
             const current = wpItem.current;
@@ -196,12 +206,6 @@
             `;
             host.appendChild(col);
         });
-
-        // High-contrast recognizable 12-hour format Live Clock
-        lastUpdated.innerHTML = `
-            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2.5"></span>
-            <span class="font-extrabold text-slate-800 tracking-wide">Live • ${format12HourTime(new Date())}</span>
-        `;
     }
 
     async function refresh() {

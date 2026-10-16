@@ -1133,24 +1133,40 @@
             return String(n + offset).padStart(3, '0');
         }
 
-        function printTicket(payload) {
+        async function printTicket(payload) {
             const errEl = document.getElementById('ticket-print-error');
             if (errEl) errEl.classList.add('hidden');
 
             const backendOk = payload && payload.print && payload.print.ok === true;
             if (backendOk) return;
 
-            if (payload && payload.print && payload.print.attempted) {
-                const msg = payload.print && payload.print.error
-                    ? 'Printer error: ' + String(payload.print.error)
-                    : 'Printing failed on the kiosk PC.';
-                if (errEl) {
-                    errEl.textContent = msg;
-                    errEl.classList.remove('hidden');
+            // When hosted on the cloud, check if the local Kiosk PC print bridge is running on localhost:8000
+            // This prints directly via Windows winspool/UNC with ZERO dialog and ZERO delay!
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 800);
+                const localRes = await fetch('http://127.0.0.1:8000/api/kiosk/print', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        display_number: payload.displayNumber,
+                        meta: payload.meta
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const localData = await localRes.json();
+                if (localData && localData.print && localData.print.ok === true) {
+                    return; // Printed silently and directly via local USB/thermal printer!
                 }
+            } catch (localErr) {
+                // Local bridge not active; continue immediately to browser thermal print
             }
 
-            const browserFallbackEnabled = {{ config('printer.browser_print_fallback') ? 'true' : 'false' }};
+            const browserFallbackEnabled = {{ config('printer.browser_print_fallback', true) ? 'true' : 'false' }};
             if (!browserFallbackEnabled) return;
 
             printTicketBrowser(payload.displayNumber, payload.meta);
@@ -1159,8 +1175,17 @@
         function printTicketBrowser(displayNumber, meta) {
             const cleanMeta = String(meta || '').replace(/[•·|\-]/g, ' - ');
             const parts = cleanMeta.split(' - ').map(s => s.trim()).filter(Boolean);
-            const staff = parts[0] || meta || '';
-            const loc = parts[1] || '';
+            const staff = (parts[0] || meta || '').toUpperCase();
+            const loc = (parts[1] || '').toUpperCase();
+
+            // Spaced number (e.g., "1 0 1") to match the authentic ESC/POS thermal layout
+            const rawNum = String(displayNumber || '').trim();
+            const spacedNum = (rawNum.length <= 4) ? rawNum.split('').join(' ') : rawNum;
+
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) + '  ' + 
+                            now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
             const html = `
     <!doctype html>
     <html>
@@ -1168,30 +1193,90 @@
         <meta charset="utf-8" />
         <title>Consultation Ticket</title>
         <style>
-          @page { margin: 0; size: 58mm auto; }
-          * { box-sizing: border-box; }
-          body { margin: 0; font-family: 'Arial Black', Arial, sans-serif; background: #fff; color: #000; }
-          .paper { width: 52mm; max-width: 52mm; padding: 2mm 1mm 8mm; text-align: center; margin: 0 auto; }
-          .line { border-top: 2px dashed #000; margin: 2mm 0; }
-          .title { font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase; }
-          .number { font-size: 82px; font-weight: 900; font-family: 'Arial Black', Impact, sans-serif; line-height: 1; margin: 3mm 0; letter-spacing: 1px; }
-          .staff { font-size: 11px; font-weight: 900; text-transform: uppercase; line-height: 1.3; }
-          .location { font-size: 10px; font-weight: 700; line-height: 1.3; margin-top: 1mm; font-family: Arial, sans-serif; }
-          .footer { font-size: 8.5px; font-weight: 600; margin-top: 2mm; color: #333; font-family: Arial, sans-serif; }
+          @page {
+            size: 58mm auto;
+            margin: 0mm !important;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            width: 48mm;
+            max-width: 48mm;
+            margin: 0 auto;
+            padding: 1mm 0 6mm 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.25;
+            color: #000;
+            background: #fff;
+            text-align: center;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .divider {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            margin: 2px 0;
+            letter-spacing: -0.5px;
+          }
+          .header-label {
+            font-weight: 900;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 1px 0;
+          }
+          .number {
+            font-size: 38px;
+            font-weight: 900;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1.1;
+            margin: 4px 0;
+            letter-spacing: 3px;
+          }
+          .staff {
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.2;
+            word-wrap: break-word;
+            padding: 1px 0;
+          }
+          .location {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.2;
+            word-wrap: break-word;
+            margin-top: 1px;
+          }
+          .footer-msg {
+            font-size: 9.5px;
+            font-weight: 600;
+            margin-top: 2px;
+          }
+          .footer-date {
+            font-size: 9px;
+            font-weight: 600;
+            margin-top: 1px;
+          }
         </style>
       </head>
       <body>
-        <div class="paper">
-          <div class="line"></div>
-          <div class="title">CONSULTATION NUMBER</div>
-          <div class="line"></div>
-          <div class="number">${String(displayNumber || '')}</div>
-          <div class="line"></div>
-          ${staff ? `<div class="staff">${staff}</div>` : ''}
-          ${loc ? `<div class="location">${loc}</div>` : ''}
-          <div class="line"></div>
-          <div class="footer">Please keep this number<br>${new Date().toLocaleString()}</div>
-        </div>
+        <div class="divider">--------------------------------</div>
+        <div class="header-label">CONSULTATION NUMBER</div>
+        <div class="divider">--------------------------------</div>
+        <div class="number">${spacedNum}</div>
+        <div class="divider">--------------------------------</div>
+        <div class="staff">${staff}</div>
+        ${loc ? `<div class="location">${loc}</div>` : ''}
+        <div class="divider">--------------------------------</div>
+        <div class="footer-msg">Please keep this number</div>
+        <div class="footer-date">${timeStr}</div>
       </body>
     </html>`;
 
@@ -1212,7 +1297,7 @@
                     } finally {
                         setTimeout(() => frame.remove(), 800);
                     }
-                }, 150);
+                }, 50);
             };
 
             if ('srcdoc' in frame) {

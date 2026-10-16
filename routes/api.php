@@ -69,6 +69,12 @@ Route::prefix('kiosk')->middleware('throttle:60,1')->group(function () {
     Route::post('/appointments', [\App\Http\Controllers\KioskAppointmentsController::class, 'store']);
     Route::post('/feedback', [\App\Http\Controllers\KioskFeedbackController::class, 'store']);
     Route::post('/print', [\App\Http\Controllers\KioskPrintController::class, 'ticket']);
+    Route::options('/print', function () {
+        return response('', 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    });
     Route::get('/queue', [\App\Http\Controllers\KioskQueueController::class, 'index']);
     Route::get('/queue/{waypoint}', [\App\Http\Controllers\KioskQueueController::class, 'show']);
     Route::get('/status', [\App\Http\Controllers\KioskStatusController::class, 'index']);

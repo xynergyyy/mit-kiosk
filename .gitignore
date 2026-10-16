@@ -38,3 +38,4 @@ credentials.txt
 /secrets/
 
 # unwanted folders
+*.apk

@@ -117,6 +117,11 @@ class KioskQueueController extends Controller
             $current = $wpConsultations->first();
             $upNext = $wpConsultations->slice(1)->take(10)->values();
 
+            // When a transaction is done and there are no active consultations, do not include this waypoint in the Now Serving queue
+            if (!$current && $upNext->isEmpty()) {
+                return null;
+            }
+
             return [
                 'waypoint' => [
                     'id' => $wp->id,
@@ -136,7 +141,7 @@ class KioskQueueController extends Controller
                 'up_next' => $upNext->map(fn ($r) => $formatTicket($r, $role))->values(),
                 'up_next_total' => max(0, $wpConsultations->count() - 1),
             ];
-        })->values();
+        })->filter()->values();
 
         // Also build legacy groups for backward compatibility if any
         $byUser = $items->groupBy('assigned_user_id');
