@@ -61,7 +61,7 @@ class PrinterService
 
     private function buildTicketBytes(string $displayNumber, string $meta): string
     {
-        $orientation = (string) config('printer.orientation', 'portrait');
+        $orientation = function_exists('config') ? (string) config('printer.orientation', 'portrait') : 'portrait';
 
         $init        = "\x1B\x40";          // ESC @ Initialize printer
         // Maximize thermal print darkness:

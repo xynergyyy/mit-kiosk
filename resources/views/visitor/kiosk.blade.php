@@ -1140,30 +1140,33 @@
             const backendOk = payload && payload.print && payload.print.ok === true;
             if (backendOk) return;
 
-            // When hosted on the cloud, check if the local Kiosk PC print bridge is running on localhost:8000
+            // When hosted on the cloud, check if the local Kiosk PC print bridge is running on port 18181 or 8000
             // This prints directly via Windows winspool/UNC with ZERO dialog and ZERO delay!
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 800);
-                const localRes = await fetch('http://127.0.0.1:8000/api/kiosk/print', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        display_number: payload.displayNumber,
-                        meta: payload.meta
-                    }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                const localData = await localRes.json();
-                if (localData && localData.print && localData.print.ok === true) {
-                    return; // Printed silently and directly via local USB/thermal printer!
+            for (const endpoint of ['http://127.0.0.1:18181', 'http://127.0.0.1:8000/api/kiosk/print']) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 700);
+                    const localRes = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            display_number: payload.displayNumber,
+                            meta: payload.meta
+                        }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    const localData = await localRes.json();
+                    const isOk = localData && ((localData.print && localData.print.ok === true) || localData.ok === true);
+                    if (isOk) {
+                        return; // Printed silently and directly via local USB/thermal printer!
+                    }
+                } catch (localErr) {
+                    // Try next local port or fallback
                 }
-            } catch (localErr) {
-                // Local bridge not active; continue immediately to browser thermal print
             }
 
             const browserFallbackEnabled = {{ config('printer.browser_print_fallback', true) ? 'true' : 'false' }};

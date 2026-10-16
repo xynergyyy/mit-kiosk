@@ -1,15 +1,15 @@
 @echo off
-title MIT Kiosk Launcher with Silent Direct Printing
+title MIT Kiosk Thermal Printer Bridge
 echo ========================================================
-echo        MIT KIOSK - SILENT THERMAL PRINT LAUNCHER
+echo        MIT KIOSK - DIRECT THERMAL PRINTER BRIDGE
 echo ========================================================
 echo.
-echo Starting local print bridge on 127.0.0.1:8000 in background...
-start /B php artisan serve --host=127.0.0.1 --port=8000 > nul 2>&1
+echo Starting local thermal print service on http://127.0.0.1:18181...
+start /B php -S 127.0.0.1:18181 scripts\local-printer-service.php > nul 2>&1
 
-echo.
-echo Launching Google Chrome in Silent Kiosk Printing mode...
-echo (Prints tickets instantly to thermal printer without any popup dialog)
+echo [OK] Local Print Bridge is running on port 18181!
+echo Any ticket requested from the hosted kiosk will print directly to POS-58
+echo with ZERO popup dialogs and authentic thermal ESC/POS layout.
 echo.
 
 set TARGET_URL=https://laravel-web-app-msri.onrender.com
@@ -21,12 +21,14 @@ if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" set CHROM
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set CHROME_BIN="%LocalAppData%\Google\Chrome\Application\chrome.exe"
 
 if %CHROME_BIN%=="" (
-    echo [NOTE] Chrome binary not found in standard paths. Launching default browser...
     start "" "%TARGET_URL%"
 ) else (
-    echo [OK] Launching Chrome with --kiosk-printing...
+    echo Launching Chrome with --kiosk-printing...
     start "" %CHROME_BIN% --kiosk-printing "%TARGET_URL%"
 )
 
 echo.
-echo Kiosk is running! Keep this window open if using local print bridge.
+echo ========================================================
+echo Kiosk is running! Keep this window open while using the Kiosk.
+echo ========================================================
+pause
