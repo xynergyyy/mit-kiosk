@@ -39,28 +39,14 @@ class AuthController extends Controller
                 return back()->withErrors(['email' => 'Access Denied: Only administrators can access this portal.']);
             }
 
-            // Generate 6-digit OTP
-            $otp = rand(111111, 999999);
-            
-            // Save OTP to DB with expiry (10 min)
-            $user->update([
-                'otp_code' => $otp,
-                'otp_expires_at' => Carbon::now()->addMinutes(10),
-            ]);
+            // Log in user directly
+            Auth::login($user);
+            $request->session()->regenerate();
 
-            // Store user ID temporarily in session for OTP step
-            session(['otp_user_id' => $user->id]);
+            $time = Carbon::now()->format('h:i A');
+            ActivityLog::record('login', "Admin User Logged In at {$time} - {$user->name}", ['channel' => 'web'], $user);
 
-            // Send OTP email
-            try {
-                Mail::to($user->email)->send(new SendOTP($otp));
-                $statusMessage = 'An OTP has been sent to your email.';
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('OTP Email Sending Error: ' . $e->getMessage());
-                return back()->withErrors(['email' => 'Unable to send verification code. Please verify your mail settings.']);
-            }
-
-            return redirect()->route('auth.otp')->with('status', $statusMessage);
+            return redirect()->route('admin.dashboard');
         }
 
         return back()->withErrors(['email' => 'Invalid credentials.']);
