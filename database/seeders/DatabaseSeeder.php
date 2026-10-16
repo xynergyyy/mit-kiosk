@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // One and only Administrator account
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['email' => 'admin@mit-maps.com'],
             [
                 'name' => 'MIT Maps Administrator',
@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
+        User::firstOrCreate(
             ['email' => 'bryecastro@gmail.com'],
             [
                 'name' => 'Brye Castro',
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // Faculty / Consultants / Counselor Accounts
-        $faculty1 = User::updateOrCreate(
+        $faculty1 = User::firstOrCreate(
             ['email' => 'johndoe@mit-maps.com'],
             [
                 'name' => 'Dr. John Doe',
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $faculty2 = User::updateOrCreate(
+        $faculty2 = User::firstOrCreate(
             ['email' => 'janesmith@mit-maps.com'],
             [
                 'name' => 'Prof. Jane Smith',
@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $faculty3 = User::updateOrCreate(
+        $faculty3 = User::firstOrCreate(
             ['email' => 'dishrexd22@yahoo.com'],
             [
                 'name' => 'Faculty Dishrexd',
@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $faculty4 = User::updateOrCreate(
+        $faculty4 = User::firstOrCreate(
             ['email' => 'katemalona@gmail.com'],
             [
                 'name' => 'Kate Malona',
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $faculty5 = User::updateOrCreate(
+        $faculty5 = User::firstOrCreate(
             ['email' => 'alexanderalfonsoviii@gmail.com'],
             [
                 'name' => 'Alexander Alfonso VIII',
@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $principal = User::updateOrCreate(
+        $principal = User::firstOrCreate(
             ['email' => 'principal@mit-maps.com'],
             [
                 'name' => 'Dr. Albus Dumbledore',
@@ -99,7 +99,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $counselor = User::updateOrCreate(
+        $counselor = User::firstOrCreate(
             ['email' => 'counselor@mit-maps.com'],
             [
                 'name' => 'Ms. Sarah Jenkins',
@@ -110,37 +110,31 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Waypoints with assigned staff
-        $lobby = \App\Models\Waypoint::updateOrCreate(
-            ['location_code' => 'WP-0001'],
-            [
+        // Waypoints with assigned staff (only seed initially if table is empty)
+        if (\App\Models\Waypoint::count() === 0) {
+            $lobby = \App\Models\Waypoint::create([
+                'location_code' => 'WP-0001',
                 'name' => 'Main Lobby',
                 'description' => 'The main entrance lobby of the MIT campus. A central meeting point for visitors.',
                 'floor' => '1',
                 'coordinates_x' => 50,
                 'coordinates_y' => 50,
-                // Free demo equirectangular panorama from Pannellum
                 'pano_url' => 'https://pannellum.org/images/alma.jpg',
-            ]
-        );
-        $lobby->assigned_user_id = $counselor->id;
-        $lobby->save();
-        $lobby->assignedUsers()->sync([$counselor->id]);
+                'assigned_user_id' => $counselor->id,
+            ]);
+            $lobby->assignedUsers()->sync([$counselor->id]);
 
-        $wing = \App\Models\Waypoint::updateOrCreate(
-            ['location_code' => 'WP-0002'],
-            [
+            $wing = \App\Models\Waypoint::create([
+                'location_code' => 'WP-0002',
                 'name' => 'Faculty Wing',
                 'description' => 'The administrative hub where faculty offices and meeting rooms are located.',
                 'floor' => '2',
                 'coordinates_x' => 30,
                 'coordinates_y' => 35,
-                // Another free demo panorama
                 'pano_url' => 'https://pannellum.org/images/cerro-toco-0.jpg',
-            ]
-        );
-        $wing->assigned_user_id = $faculty1->id;
-        $wing->save();
-        $wing->assignedUsers()->sync([$faculty1->id, $faculty2->id]);
+                'assigned_user_id' => $faculty1->id,
+            ]);
+            $wing->assignedUsers()->sync([$faculty1->id, $faculty2->id]);
+        }
     }
 }
